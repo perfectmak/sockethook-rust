@@ -8,13 +8,13 @@ Sockethook is a Webhook-to-WebSocket proxy written in Rust. It's designed for bu
 
 Sockethook is written in Rust and can be installed by running
 
-`$ go get github.com/fabianlindfors/sockethook`
+`$ cargo install sockethook`
 
 The tool is started with
 
 ```
 $ sockethook
-2019-10-26T17:15:56Z INFO  sockethook] Sockethook is ready and listening at 0.0.0.0:3300 ✅
+2019-10-26T17:15:56Z INFO  sockethook] Sockethook is ready and listening at 0.0.0.0:1234 ✅
 ```
 
 Sockethook is now ready to start receiving Webhooks! WebSockets can be connected through `/socket` followed by the endpoint to which you want to subscribe, for example: `/socket/order/created`. Any Webhook requests sent to `/hook/order/created` will now be broadcast to all subscribers listening to the specific endpoint.
