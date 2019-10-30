@@ -79,6 +79,10 @@ impl Handler<WebsocketState> for AppData {
           Some(endpoint_sockets) => {
             info!("Removing socket with id: {}", id);
             endpoint_sockets.remove(&id);
+
+            if endpoint_sockets.is_empty() {
+              self.clients.remove(&endpoint);
+            }
           },
           None => {},
         },
