@@ -88,5 +88,4 @@ Here is a list improvements in this implementation from the original [sockethook
 
 - [x] Cleanup websocket connections on disconnection
 - [x] Handle Cors
-- [ ] RWLock around client sockets management
 - [ ] Allow scaling sockets and hooks to multiple computer
