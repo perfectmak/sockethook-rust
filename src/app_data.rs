@@ -40,6 +40,11 @@ impl AppData {
 
 impl Actor for AppData {
   type Context = Context<Self>;
+
+  fn started(&mut self, ctx: &mut Self::Context) {
+    // increase capacity of message backlog
+    ctx.set_mailbox_capacity(100);
+  }
 }
 
 impl Handler<RegisterConnection> for AppData {
