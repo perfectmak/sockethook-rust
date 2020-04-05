@@ -1,31 +1,32 @@
-use uuid::Uuid;
 use std::collections::HashMap;
+use uuid::Uuid;
 use actix::prelude::*;
 use crate::websocket::{WebsocketConnection, WebsockeMessageEvent, WebsocketState};
-
-#[derive(Message)]
-pub struct RegisterConnection {
-  pub id: Uuid,
-  pub endpoint: String,
-  pub connection: Addr<WebsocketConnection>,
-}
-
-#[derive(Message)]
-pub struct PublishMessage {
-  pub endpoint: String,
-  pub message: String,
-}
-
-#[derive(Message)]
-pub struct Shutdown;
+use crate::messages::{RegisterConnection, PublishMessage, Shutdown};
+use crate::redis::RedisActor;
 
 type Endpoint = String;
 
 pub struct AppData {
-  pub clients: HashMap<Endpoint, HashMap<Uuid, Addr<WebsocketConnection>>>,
+  clients: HashMap<Endpoint, HashMap<Uuid, Addr<WebsocketConnection>>>,
+  redis: Option<RedisActor>
 }
 
 impl AppData {
+  pub fn new() -> AppData {
+    AppData {
+      clients: HashMap::new(),
+      redis: None,
+    }
+  }
+
+  pub fn new_with_redis(redis_url: String) -> AppData {
+    let mut app_data = AppData::new();
+    let redis = RedisActor::new(redis_url);
+    app_data.redis = Some(redis);
+    app_data
+  }
+
   pub fn insert(&mut self, endpoint: &Endpoint, id: Uuid, addr: Addr<WebsocketConnection>) {
     if let Some(endpoint_sockets) = self.clients.get_mut(endpoint) {
       endpoint_sockets.insert(id, addr);
@@ -44,6 +45,12 @@ impl Actor for AppData {
   fn started(&mut self, ctx: &mut Self::Context) {
     // increase capacity of message backlog
     ctx.set_mailbox_capacity(100);
+
+    if let Some(redis) = self.redis {
+      ctx.spawn(redis.connect().and_then(|| {
+        
+      }));
+    }
   }
 }
 
@@ -52,7 +59,10 @@ impl Handler<RegisterConnection> for AppData {
 
   fn handle(&mut self, msg: RegisterConnection, _: &mut Context<Self>) {
     info!("Registering connection for endpoint: {}, id: {}", msg.endpoint, msg.id);
-    self.insert(&msg.endpoint, msg.id, msg.connection);
+    self.insert(&msg.endpoint, msg.id, msg.connection.clone());
+    // if let Some(redis_addr) = &self.redis_addr {
+    //   redis_addr.do_send(msg);
+    // }
   }
 }
 
@@ -67,6 +77,10 @@ impl Handler<PublishMessage> for AppData {
         });
       }
     }
+
+    // if let Some(redis_addr) = &self.redis_addr {
+    //   redis_addr.do_send(event);
+    // }
   }
 }
 

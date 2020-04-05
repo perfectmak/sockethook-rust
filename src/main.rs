@@ -10,9 +10,13 @@ use actix_web::{http::header, web, App, HttpServer, HttpRequest, HttpResponse, E
 use actix_cors::Cors;
 use actix_web_actors::ws;
 use websocket::WebsocketConnection;
-use app_data::{AppData, RegisterConnection, PublishMessage, Shutdown};
+use app_data::AppData;
+use messages::{RegisterConnection, PublishMessage, Shutdown};
+use redis::RedisActor;
 
 mod websocket;
+mod messages;
+mod redis;
 mod app_data;
 
 const HOOK_PATH: &'static str = "/hook{endpoint:/.*}";
@@ -76,6 +80,7 @@ fn handle_client(
   Ok(res)
 }
 
+/// Cli Arguments
 #[derive(StructOpt)]
 #[structopt(name = "sockethook", version = "1.0.0", author = "Perfect Makanju")]
 struct Args {
@@ -85,6 +90,9 @@ struct Args {
   /// Sets the network address this program should bind to. Default (0.0.0.0)
   #[structopt(short = "a", long = "address", default_value = "0.0.0.0")]
   address: String,
+  /// Set a redis connection string for coordinating multiple instances of sockethoot.
+  #[structopt(short = "r", long = "redis")]
+  redis_url: Option<String>,
 }
 
 fn main() -> std::io::Result<()> {
@@ -94,7 +102,13 @@ fn main() -> std::io::Result<()> {
 
   let args = Args::from_args();
   let sys = System::new("sockethook");
-  let app_data = AppData { clients: HashMap::new() }.start();
+  let app_data = match args.redis_url { 
+    Some(redis_url) => {
+      AppData::new_with_redis(redis_url.clone())
+    },
+    None => AppData::new(),
+  }.start();
+
   let app_data_copy = app_data.clone();
   let addr_str = format!("{}:{}", args.address, args.port);
 
@@ -127,7 +141,7 @@ fn main() -> std::io::Result<()> {
   .unwrap()
   .start();
 
-  info!("Sockethook is ready and listening at {} ✅", addr_str);
-  
+  info!("Sockethook is ready and listening at {} ✅", &addr_str);
+
   sys.run()
 }
