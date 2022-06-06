@@ -13,7 +13,7 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 actix = "0.8.3"
-actix-codec = "0.1.2"
+actix-codec = "0.4.0"
 actix-web = "1.0.8"
 actix-web-actors = "1.0.2"
 actix-cors = "0.1.0"
